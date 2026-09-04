@@ -203,16 +203,20 @@ body {
   align-items: center;
   justify-content: center;
   background: #000;
-  transition: transform 0.3s ease;
+  transition: transform 0.25s ease;
 }
 
-/* 横画面擬似回転モード (CSS fallback for rotate) */
+/* 横画面擬似回転モード (スマホ縦持ちで回転ボタンを押した時) */
 .video-wrapper.forced-landscape {
-  transform: rotate(90deg);
-  transform-origin: center center;
-  width: 100vh;
-  width: 100dvh;
-  height: 100vw;
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  width: 100dvh !important;
+  height: 100dvw !important;
+  max-width: 100dvh !important;
+  max-height: 100dvw !important;
+  transform: translate(-50%, -50%) rotate(90deg) !important;
+  z-index: 50;
 }
 
 video {
@@ -220,6 +224,12 @@ video {
   height: 100%;
   object-fit: contain;
   background: #000;
+  transition: object-fit 0.2s ease;
+}
+
+/* 画面いっぱいに拡大表示モード (Cover) */
+video.zoom-cover {
+  object-fit: cover !important;
 }
 
 .video-overlay {
@@ -644,4 +654,43 @@ video {
 /* ユーティリティ */
 .hidden {
   display: none !important;
+}
+
+/* =========================================
+   横画面（物理回転時）の最適化
+   ========================================= */
+@media (orientation: landscape) {
+  .app-container {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .video-wrapper {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .top-bar {
+    padding: calc(var(--safe-top) + 6px) 24px 6px;
+  }
+
+  .bottom-bar {
+    padding: 6px 24px calc(var(--safe-bottom) + 8px);
+  }
+
+  .big-play-btn {
+    width: 68px;
+    height: 68px;
+  }
+
+  .brand-title {
+    font-size: 16px;
+  }
+
+  .icon-btn {
+    width: 38px;
+    height: 38px;
+  }
 }

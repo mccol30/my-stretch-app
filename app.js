@@ -29,6 +29,7 @@ const btnPlayPause = document.getElementById('btn-play-pause');
 const iconPlay = document.getElementById('icon-play');
 const iconPause = document.getElementById('icon-pause');
 const btnRotate = document.getElementById('btn-rotate');
+const btnZoom = document.getElementById('btn-zoom');
 const btnOpenCalendar = document.getElementById('btn-open-calendar');
 const progressContainer = document.getElementById('progress-container');
 const progressFill = document.getElementById('progress-fill');
@@ -262,8 +263,41 @@ btnRotate.addEventListener('click', (e) => {
     }
   }
 
-  // 2. iOS Safari や非対応環境向けに CSS 90度回転トグル
+  // 2. Fullscreen API の試行（可能なら全画面へ）
+  if (isLandscapeMode) {
+    if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  } else {
+    if (document.exitFullscreen && document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+  }
+
+  // 3. iOS Safari や非対応環境向けに CSS 90度回転トグル
   videoWrapper.classList.toggle('forced-landscape', isLandscapeMode);
+  
+  // 横画面時は自動的に画面いっぱい拡大モードに設定
+  if (isLandscapeMode) {
+    video.classList.add('zoom-cover');
+  }
+});
+
+// 画面いっぱい拡大（黒帯なし大迫力表示）トグル
+btnZoom.addEventListener('click', (e) => {
+  e.stopPropagation();
+  video.classList.toggle('zoom-cover');
+});
+
+// 動画エリアのダブルタップでも拡大/通常表示をトグル
+let lastTapTime = 0;
+videoWrapper.addEventListener('touchend', (e) => {
+  const now = Date.now();
+  if (now - lastTapTime < 300 && now - lastTapTime > 50) {
+    video.classList.toggle('zoom-cover');
+    e.preventDefault();
+  }
+  lastTapTime = now;
 });
 
 // 動画終了イベント（要件: 最後まで再生した場合、その日のトレーニング完了が記録される）

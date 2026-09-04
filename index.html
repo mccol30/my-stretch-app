@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <!-- 検索エンジン完全除外 -->
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+  <meta name="googlebot" content="noindex, nofollow, noarchive">
+  <title>毎日のストレッチ習慣</title>
+  
+  <!-- PWA & テーマ設定 -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#121214">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ストレッチ">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700;800&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ===============================
+       1. パスコードロック画面（覗き見防止）
+       =============================== -->
+  <div id="lock-screen" class="lock-container">
+    <div class="lock-card">
+      <div class="lock-icon-badge">
+        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+      </div>
+      <h1 class="lock-title">パスコードを入力</h1>
+      <p class="lock-subtitle">あなた専用のトレーニングアプリです</p>
+      
+      <!-- 4桁インジケーター -->
+      <div class="passcode-dots" id="passcode-dots">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </div>
+      <div id="lock-error-msg" class="lock-error"></div>
+
+      <!-- テンキーパッド -->
+      <div class="keypad">
+        <button class="key-btn" data-key="1">1</button>
+        <button class="key-btn" data-key="2">2</button>
+        <button class="key-btn" data-key="3">3</button>
+        <button class="key-btn" data-key="4">4</button>
+        <button class="key-btn" data-key="5">5</button>
+        <button class="key-btn" data-key="6">6</button>
+        <button class="key-btn" data-key="7">7</button>
+        <button class="key-btn" data-key="8">8</button>
+        <button class="key-btn" data-key="9">9</button>
+        <button class="key-btn action-key" id="btn-clear">クリア</button>
+        <button class="key-btn" data-key="0">0</button>
+        <button class="key-btn action-key" id="btn-delete">⌫</button>
+      </div>
+
+      <!-- 端末記憶オプション -->
+      <label class="remember-checkbox-label">
+        <input type="checkbox" id="chk-remember" checked>
+        <span>この端末を記憶する（次回自動ログイン）</span>
+      </label>
+      <p class="lock-hint">※初期パスコード: <strong>1234</strong>（アプリ内で変更可能）</p>
+    </div>
+  </div>
+
+  <!-- ===============================
+       2. メイン動画再生画面
+       =============================== -->
+  <main id="app-main" class="app-container hidden">
+    <div class="video-wrapper" id="video-wrapper">
+      <video id="training-video" playsinline preload="auto"></video>
+
+      <!-- コントロールオーバーレイ -->
+      <div class="video-overlay" id="video-overlay">
+        <!-- 上部ヘッダーバー -->
+        <header class="top-bar">
+          <div class="app-brand">
+            <span class="brand-title">毎日のストレッチ</span>
+          </div>
+          <div class="header-actions">
+            <!-- 画面回転切り替えボタン（縦 ⇔ 横） -->
+            <button id="btn-rotate" class="icon-btn" title="縦横切り替え" aria-label="画面回転">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <path d="M3 3v5h5"></path>
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path>
+                <path d="M16 21h5v-5"></path>
+              </svg>
+            </button>
+            <!-- カレンダー履歴ボタン -->
+            <button id="btn-open-calendar" class="icon-btn highlight-btn" title="トレーニング履歴" aria-label="カレンダー履歴">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </button>
+            <!-- 設定・パスコード変更ボタン -->
+            <button id="btn-open-settings" class="icon-btn" title="設定" aria-label="設定">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+            </button>
+          </div>
+        </header>
+
+        <!-- 中央の再生/一時停止ボタン -->
+        <div class="center-play-area">
+          <button id="btn-play-pause" class="big-play-btn" aria-label="再生・一時停止">
+            <svg id="icon-play" viewBox="0 0 24 24" width="44" height="44" fill="currentColor">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <svg id="icon-pause" class="hidden" viewBox="0 0 24 24" width="44" height="44" fill="currentColor">
+              <rect x="6" y="4" width="4" height="16"></rect>
+              <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+          </button>
+        </div>
+
+        <!-- 下部プログレスバー -->
+        <footer class="bottom-bar">
+          <div class="time-display" id="time-display">0:00 / 0:00</div>
+          <div class="progress-bar-container" id="progress-container">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+          <div class="status-hint">タップでメニュー表示 / 非表示</div>
+        </footer>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===============================
+       3. カレンダーオーバーレイ（トレーニング履歴）
+       =============================== -->
+  <div id="calendar-overlay" class="modal-backdrop hidden" aria-modal="true" role="dialog">
+    <div class="calendar-card" id="calendar-card">
+      <header class="modal-header">
+        <div class="month-nav">
+          <button id="btn-prev-month" class="nav-btn" aria-label="前月へ">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+          <h2 id="calendar-month-title" class="month-title">2026年 9月</h2>
+          <button id="btn-next-month" class="nav-btn" aria-label="次月へ">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </div>
+        <button id="btn-close-calendar" class="close-btn" aria-label="閉じる">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </header>
+
+      <!-- 曜日行 -->
+      <div class="weekdays-row">
+        <span class="sunday">日</span>
+        <span>月</span>
+        <span>火</span>
+        <span>水</span>
+        <span>木</span>
+        <span>金</span>
+        <span class="saturday">土</span>
+      </div>
+
+      <!-- 日付グリッド -->
+      <div class="days-grid" id="days-grid"></div>
+
+      <!-- 月間サマリー -->
+      <div class="calendar-summary">
+        <span>今月のトレーニング達成:</span>
+        <strong id="month-completed-badge">0日 完了</strong>
+      </div>
+
+      <button id="btn-close-calendar-bottom" class="primary-btn">閉じる</button>
+    </div>
+  </div>
+
+  <!-- ===============================
+       4. 達成完了ダイアログ
+       =============================== -->
+  <div id="completion-dialog" class="modal-backdrop hidden" aria-modal="true" role="dialog">
+    <div class="dialog-card">
+      <div class="celebration-badge">💮</div>
+      <h2 class="dialog-title">トレーニング達成！</h2>
+      <p class="dialog-desc">最後までストレッチを完了しました！<br>本日の日付にスタンプを記録しました。</p>
+      <div class="dialog-actions">
+        <button id="btn-dialog-calendar" class="primary-btn">カレンダーを確認</button>
+        <button id="btn-dialog-close" class="secondary-btn">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===============================
+       5. パスコード変更・設定モーダル
+       =============================== -->
+  <div id="settings-dialog" class="modal-backdrop hidden" aria-modal="true" role="dialog">
+    <div class="dialog-card">
+      <h2 class="dialog-title">設定</h2>
+      <div class="settings-form">
+        <label for="input-new-pin">新しい4桁パスコード</label>
+        <input type="password" id="input-new-pin" maxlength="4" pattern="[0-9]*" inputmode="numeric" placeholder="4桁の数字">
+        <div id="pin-change-msg" class="setting-msg"></div>
+        <button id="btn-save-pin" class="primary-btn" style="margin-top: 12px;">暗証番号を変更する</button>
+        <hr class="setting-divider">
+        <button id="btn-logout" class="secondary-btn" style="color: #ff5252;">パスコードを再ロックする</button>
+        <button id="btn-close-settings" class="secondary-btn" style="margin-top: 8px;">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

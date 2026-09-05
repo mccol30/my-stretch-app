@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stretch-app-v2';
+const CACHE_NAME = 'stretch-app-v3';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -34,33 +34,8 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// リクエストのインターセプト
+// リクエストのインターセプト (Cache First, Network Fallback)
 self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
-
-  // 動画ファイル (.mp4) の場合はキャッシュまたはネットワークから取得
-  if (url.pathname.endsWith('.mp4')) {
-    event.respondWith(
-      caches.match(event.request).then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-        return fetch(event.request).then((networkResponse) => {
-          // 成功レスポンスならクローンしてキャッシュ保存
-          if (networkResponse.status === 200) {
-            const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, clone);
-            });
-          }
-          return networkResponse;
-        });
-      })
-    );
-    return;
-  }
-
-  // 通常の静的リソース (Cache First)
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       return cachedResponse || fetch(event.request);

@@ -77,6 +77,24 @@
        2. メイン動画再生画面
        =============================== -->
   <main id="app-main" class="app-container hidden">
+    <!-- 動画ファイル選択用（非表示） -->
+    <input type="file" id="video-file-input" accept="video/*" class="hidden">
+
+    <!-- 動画未設定時の選択案内画面 -->
+    <div id="no-video-prompt" class="no-video-container hidden">
+      <div class="no-video-card">
+        <div class="no-video-icon">🎬</div>
+        <h2 class="no-video-title">動画を選択してください</h2>
+        <p class="no-video-desc">スマホ内のトレーニング動画（ストレッチ、ヨガ、筋トレなど）を選んでください。<br>一度選ぶと次回からも自動で再生されます。</p>
+        <button id="btn-select-first-video" class="primary-btn">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -4px; margin-right: 6px;">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+          スマホ内の動画を選択する
+        </button>
+      </div>
+    </div>
+
     <div class="video-wrapper" id="video-wrapper">
       <video id="training-video" playsinline preload="auto"></video>
 
@@ -85,9 +103,15 @@
         <!-- 上部ヘッダーバー -->
         <header class="top-bar">
           <div class="app-brand">
-            <span class="brand-title">毎日のストレッチ</span>
+            <span class="brand-title" id="video-title-display">毎日のストレッチ</span>
           </div>
           <div class="header-actions">
+            <!-- 動画変更ボタン -->
+            <button id="btn-change-video" class="icon-btn" title="動画を変更" aria-label="動画選択">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+              </svg>
+            </button>
             <!-- 画面回転切り替えボタン（縦 ⇔ 横） -->
             <button id="btn-rotate" class="icon-btn" title="縦横切り替え" aria-label="画面回転">
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -223,6 +247,15 @@
     <div class="dialog-card">
       <h2 class="dialog-title">設定</h2>
       <div class="settings-form">
+        <!-- 動画の変更セクション -->
+        <label>使用中のトレーニング動画</label>
+        <div id="settings-current-video-name" class="current-video-badge">未設定</div>
+        <button id="btn-settings-change-video" class="secondary-btn" style="margin-bottom: 14px;">
+          📁 スマホ内の動画を変更する
+        </button>
+
+        <hr class="setting-divider">
+
         <label for="input-new-pin">新しい4桁パスコード</label>
         <input type="password" id="input-new-pin" maxlength="4" pattern="[0-9]*" inputmode="numeric" placeholder="4桁の数字">
         <div id="pin-change-msg" class="setting-msg"></div>

@@ -5,7 +5,12 @@ const PIN_KEY = 'stretch_pin';
 const REMEMBER_KEY = 'stretch_auth_remembered';
 const DATES_KEY = 'stretch_completed_dates';
 const DEFAULT_PIN = '1234';
-const VIDEO_PATH = 'stretch3.mp4';
+
+// IndexedDB 設定 (端末内動画ストレージ)
+const DB_NAME = 'StretchTrainingDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'videos';
+const ACTIVE_VIDEO_KEY = 'active_video';
 
 // ==========================================
 // DOM要素の取得
@@ -35,6 +40,15 @@ const progressContainer = document.getElementById('progress-container');
 const progressFill = document.getElementById('progress-fill');
 const timeDisplay = document.getElementById('time-display');
 
+// 動画ファイル選択 & UI要素
+const videoFileInput = document.getElementById('video-file-input');
+const btnChangeVideo = document.getElementById('btn-change-video');
+const btnSelectFirstVideo = document.getElementById('btn-select-first-video');
+const btnSettingsChangeVideo = document.getElementById('btn-settings-change-video');
+const noVideoPrompt = document.getElementById('no-video-prompt');
+const videoTitleDisplay = document.getElementById('video-title-display');
+const settingsCurrentVideoName = document.getElementById('settings-current-video-name');
+
 // カレンダーオーバーレイ
 const calendarOverlay = document.getElementById('calendar-overlay');
 const calendarCard = document.getElementById('calendar-card');
@@ -59,6 +73,53 @@ const inputNewPin = document.getElementById('input-new-pin');
 const btnSavePin = document.getElementById('btn-save-pin');
 const btnLogout = document.getElementById('btn-logout');
 const pinChangeMsg = document.getElementById('pin-change-msg');
+
+// ==========================================
+// IndexedDB 管理モジュール
+// ==========================================
+function openDatabase() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function saveVideoToDB(file) {
+  const db = await openDatabase();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const record = {
+      id: ACTIVE_VIDEO_KEY,
+      blob: file,
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      updatedAt: Date.now()
+    };
+    const req = store.put(record);
+    req.onsuccess = () => resolve(record);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function getVideoFromDB() {
+  const db = await openDatabase();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.get(ACTIVE_VIDEO_KEY);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
 
 // ==========================================
 // 状態管理
@@ -117,15 +178,86 @@ function verifyPin() {
   }
 }
 
+let currentVideoObjectURL = null;
+
+async function loadActiveVideo() {
+  try {
+    const record = await getVideoFromDB();
+    if (record && record.blob) {
+      if (currentVideoObjectURL) {
+        URL.revokeObjectURL(currentVideoObjectURL);
+      }
+      currentVideoObjectURL = URL.createObjectURL(record.blob);
+      video.src = currentVideoObjectURL;
+      video.load();
+
+      videoTitleDisplay.textContent = record.name || 'ストレッチ動画';
+      settingsCurrentVideoName.textContent = `${record.name} (${(record.size / (1024 * 1024)).toFixed(1)} MB)`;
+      noVideoPrompt.classList.add('hidden');
+    } else {
+      // 未設定状態
+      if (currentVideoObjectURL) {
+        URL.revokeObjectURL(currentVideoObjectURL);
+        currentVideoObjectURL = null;
+      }
+      video.removeAttribute('src');
+      videoTitleDisplay.textContent = '動画未設定';
+      settingsCurrentVideoName.textContent = '動画が設定されていません';
+      noVideoPrompt.classList.remove('hidden');
+    }
+  } catch (err) {
+    console.error('Failed to load video from IndexedDB:', err);
+    noVideoPrompt.classList.remove('hidden');
+  }
+}
+
 function unlockApp() {
   lockScreen.classList.add('hidden');
   appMain.classList.remove('hidden');
-  // 認証後に動画ソースを設定
-  if (!video.src || video.src === '') {
-    video.src = VIDEO_PATH;
-    video.load();
-  }
+  loadActiveVideo();
 }
+
+// 動画ファイル選択トリガー
+btnChangeVideo.addEventListener('click', (e) => {
+  e.stopPropagation();
+  videoFileInput.click();
+});
+
+btnSelectFirstVideo.addEventListener('click', (e) => {
+  e.stopPropagation();
+  videoFileInput.click();
+});
+
+btnSettingsChangeVideo.addEventListener('click', (e) => {
+  e.stopPropagation();
+  settingsDialog.classList.add('hidden');
+  videoFileInput.click();
+});
+
+// ファイル選択時の保存 & ロード処理
+videoFileInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  try {
+    // IndexedDB に動画Blobを丸ごと保存
+    await saveVideoToDB(file);
+    // 保存した動画を画面に読み込み
+    await loadActiveVideo();
+
+    // プログレスバー・再生状態のリセット
+    progressFill.style.width = '0%';
+    timeDisplay.textContent = '0:00 / 0:00';
+    iconPlay.classList.remove('hidden');
+    iconPause.classList.add('hidden');
+    showOverlay();
+  } catch (err) {
+    console.error('Failed to save selected video:', err);
+    alert('動画の保存に失敗しました。端末の空き容量をご確認ください。');
+  } finally {
+    videoFileInput.value = '';
+  }
+});
 
 // テンキーイベント
 keypad.addEventListener('click', (e) => {
@@ -169,6 +301,10 @@ window.addEventListener('keydown', (e) => {
 // 2. 動画再生 & 操作コントロール
 // ==========================================
 function togglePlay() {
+  if (!video.src || video.src === '' || !noVideoPrompt.classList.contains('hidden')) {
+    videoFileInput.click();
+    return;
+  }
   if (video.paused || video.ended) {
     if (video.ended) {
       video.currentTime = 0;
